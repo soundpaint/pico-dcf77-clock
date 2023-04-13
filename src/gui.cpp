@@ -138,7 +138,7 @@ GUI::~GUI()
 bool
 GUI::init()
 {
-  sleep_ms(300); // ensure LCD has powered up
+  sleep_ms(500); // ensure LCD has powered up
   lcd_mpu_interface = new HW061();
   if (lcd_mpu_interface) {
     if (lcd_mpu_interface->init()) {

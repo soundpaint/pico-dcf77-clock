@@ -55,10 +55,12 @@ public:
   };
   typedef void(* data_receive_callback_t) (uint64_t target_wallclock_us,
                                            time_code_t &time_code);
+  static const uint16_t GPIO_LED_PIN;
   static const uint16_t GPIO_TCO_PIN;
   static const char *gpio_irq_str[];
   DCF77();
-  DCF77(const uint16_t gpio_tco_pin, const bool inverse_tco);
+  DCF77(const uint16_t gpio_tco_pin, const bool inverse_tco,
+        const bool display_pulses);
   bool init(data_receive_callback_t log_callback);
 private:
   static const datetime_t START_DATETIME;
@@ -69,11 +71,13 @@ private:
   static uint8_t bit[];
   static uint64_t bit_time_us[];
   static bool inverse_tco;
+  static bool display_pulses;
   static bool level_low;
   static uint64_t prev_fall_time_us;
   static uint64_t prev_rise_time_us;
   const uint16_t _gpio_tco_pin;
   const bool _inverse_tco;
+  const bool _display_pulses;
   static void render_gpio_event(char *buffer, const uint32_t events);
   static bool check_parity(const uint8_t index_start,
                            const uint8_t index_parity);
@@ -82,6 +86,7 @@ private:
   static void add_bit(const uint8_t value, const uint64_t bit_wallclock_us);
   static void handle_falling_edge(const uint64_t edge_wallclock_us);
   static void handle_rising_edge(const uint64_t edge_wallclock_us);
+  static void update_led_status(const bool high_level);
   static void tco_edge_handle(const uint gpio, const uint32_t events);
   void do_tco_edge_handle(const uint gpio, const uint32_t events);
 };

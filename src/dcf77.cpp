@@ -39,14 +39,17 @@
 #include "hardware/rtc.h"
 
 const uint16_t
+DCF77::GPIO_LED_PIN = 25u;
+
+const uint16_t
 DCF77::GPIO_TCO_PIN = 16u;
 
 const datetime_t
 DCF77::START_DATETIME = {
-  .year = 1970,
+  .year = 1,
   .month = 1,
   .day = 1,
-  .dotw = 4,
+  .dotw = 6,
   .hour = 0,
   .min = 0,
   .sec = 0,
@@ -72,6 +75,9 @@ DCF77::instance = 0;
 bool
 DCF77::inverse_tco = false;
 
+bool
+DCF77::display_pulses = false;
+
 DCF77::data_receive_callback_t
 DCF77::data_receive_callback = 0;
 
@@ -95,12 +101,15 @@ DCF77::prev_fall_time_us = 0;
 uint64_t
 DCF77::prev_rise_time_us = 0;
 
-DCF77::DCF77() : DCF77(GPIO_TCO_PIN, true)
+DCF77::DCF77() : DCF77(GPIO_TCO_PIN, true, true)
 {
 }
 
-DCF77::DCF77(const uint16_t gpio_tco_pin, const bool inverse_tco)
-  : _gpio_tco_pin(gpio_tco_pin), _inverse_tco(inverse_tco)
+DCF77::DCF77(const uint16_t gpio_tco_pin, const bool inverse_tco,
+             const bool display_pulses)
+  : _gpio_tco_pin(gpio_tco_pin),
+    _inverse_tco(inverse_tco),
+    _display_pulses(display_pulses)
 {
 }
 
@@ -314,10 +323,19 @@ DCF77::handle_rising_edge(const uint64_t edge_wallclock_us)
 }
 
 void
+DCF77::update_led_status(const bool high_level)
+{
+  gpio_put(GPIO_LED_PIN, high_level);
+}
+
+void
 DCF77::tco_edge_handle(const uint gpio, const uint32_t events)
 {
   const uint64_t edge_wallclock_us = time_us_64();
   const bool high_level = gpio_get(gpio) != inverse_tco;
+  if (display_pulses) {
+    update_led_status(!high_level);
+  }
   const bool falling = inverse_tco ?
     events & GPIO_IRQ_EDGE_RISE :
     events & GPIO_IRQ_EDGE_FALL;
@@ -380,6 +398,7 @@ DCF77::init(data_receive_callback_t data_receive_callback)
   }
   instance = this;
   inverse_tco = _inverse_tco;
+  display_pulses = _display_pulses;
   DCF77::data_receive_callback = data_receive_callback;
   datetime_t time = START_DATETIME;
   rtc_set_datetime(&time);
